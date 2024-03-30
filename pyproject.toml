@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinyoffice"
+authors = [
+    {name = "Samuel Woodward", email = "sam@woodward.fyi"}
+]
+description = "Make your Office files tiny!"
+readme = "README.md"
+keywords = ["office", "compress", "convert", "image", "Word", "Excel", "Powerpoint"]
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+version = "0.0.1"
+dependencies = ["Pillow"]
+
+[project.urls]
+Homepage = "https://github.com/PyWoody/tinyoffice"
