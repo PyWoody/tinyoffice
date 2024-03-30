@@ -15,6 +15,7 @@ You can install `tinyoffice` from PyPi:
 
 ## Usage
 
+```
 usage: tinyoffice [-h] [-r] [-c] [-v]
                   [-t .docx .pptx .xlsx [.docx .pptx .xlsx ...]] [--overwrite]
                   [-o OUTPUT] [-exts EXTENSIONS [EXTENSIONS ...]]
@@ -42,3 +43,4 @@ options:
   -exts EXTENSIONS [EXTENSIONS ...], --extensions EXTENSIONS [EXTENSIONS ...]
                         Image extensions to compress. Default will be only the extensions that are supported by Pillow on your system.
                         Should be ignored.
+```
