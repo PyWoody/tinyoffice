@@ -2,6 +2,8 @@
 
 Make your Office files tiny!
 
+`tinyoffice` attemps to compresses and optionally convert your embedded image files in your Office files.
+
 
 ## Installation
 
@@ -11,6 +13,9 @@ You can install `tinyoffice` from PyPi:
 % pip install tinyoffice
 ```
 
+NOTE: `tinyoffice` requires `Pillow` (`PIL` Fork) [Pillow](https://pillow.readthedocs.io/en/stable/), which can have installation conflicts. If you experience any issues while installing `tinyoffice`, please follow the `Pillow` installation steps found here: https://pillow.readthed
+## tinyoffice
+ocs.io/en/stable/installation.html.
 
 
 ## Usage
