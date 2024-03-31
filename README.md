@@ -25,9 +25,9 @@ Make your Office files tiny!
 
 positional arguments:
   path                  File or directory path.
-                        If file and recurse (-r/--recurse) is not set, only that file will be compressed.
-                        If directory, and recurse is not set, only the top-level files in the directory will be compressed.
-                        If recurse is set, everythingat path and below will be compressed.
+                        If a file and recurse (-r/--recurse) is not set, only that file will be compressed.
+                        If a directory and recurse is not set, only the top-level files in the directory will be compressed.
+                        If recurse is set, everything at path and below will be compressed.
 
 options:
   -h, --help            show this help message and exit

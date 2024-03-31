@@ -11,10 +11,10 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument(
     'path',
-    help='File or directory path.\nIf file and recurse (-r/--recurse) '
-         'is not set, only that file will be compressed.\nIf directory, '
+    help='File or directory path.\nIf a file and recurse (-r/--recurse) '
+         'is not set, only that file will be compressed.\nIf a directory, '
          'and recurse is not set, only the top-level files in the '
-         'directory will be compressed.\nIf recurse is set, everything'
+         'directory will be compressed.\nIf recurse is set, everything '
          'at path and below will be compressed.'
 )
 parser.add_argument(
@@ -74,13 +74,13 @@ args = parser.parse_args()
 image_extensions = args.extensions if args.extensions else None
 types = args.types if args.types else None
 
-if args.verbose == 0:
+if args.verbose <= 0:
     verbosity = tinyoffice.Verbosity.NONE
 elif args.verbose == 1:
     verbosity = tinyoffice.Verbosity.LOW
 elif args.verbose == 2:
     verbosity = tinyoffice.Verbosity.NORMAL
-elif args.verbose == 3:
+else args.verbose:
     verbosity = tinyoffice.Verbosity.HIGH
 
 path = os.path.realpath(args.path)
