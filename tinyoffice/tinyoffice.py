@@ -45,6 +45,9 @@ def walk(
     convert=False,
     verbosity=Verbosity.NORMAL,
     image_extensions=None,
+    jpeg_quality=75,
+    tiff_quality=75,
+    optimize=True,
 ):
     """
     Recursively iterates over the files in the directory
@@ -66,6 +69,10 @@ def walk(
         image_extensions: Supported image extensions. Default is None which
                           will use only the supported extensions that
                           can be OPENd and SAVEd by PIL on your machine.
+        jpeg_quality: Defaults to 75, which is PIL's default quality value
+                 Only applicable to JPEG and TIFFs
+        tiff_quality: Defaults to 75.
+        optimize: Default is True. Will be applied to JPEG and PNGs only
     """
     if types is None:
         types = {'.docx', '.pptx', '.xslx'}
@@ -127,6 +134,9 @@ def walk(
                             output=outpath,
                             convert=convert,
                             image_extensions=image_extensions,
+                            jpeg_quality=jpeg_quality,
+                            tiff_quality=tiff_quality,
+                            optimize=optimize,
                         )
                         if verbosity is not Verbosity.NONE:
                             future.add_done_callback(totaler_callback)
@@ -144,6 +154,9 @@ def listdir(
     convert=False,
     verbosity=Verbosity.NORMAL,
     image_extensions=None,
+    jpeg_quality=75,
+    tiff_quality=75,
+    optimize=True,
 ):
     """
     Iterates over the files in the directory and attempts to compress
@@ -162,6 +175,10 @@ def listdir(
         image_extensions: Supported image extensions. Deafult is None which
                           will use only the supported extensions that
                           can be OPENd and SAVEd by PIL on your machine.
+        jpeg_quality: Defaults to 75, which is PIL's default quality value
+                 Only applicable to JPEG and TIFFs
+        tiff_quality: Defaults to 75.
+        optimize: Default is True. Will be applied to JPEG and PNGs only
     """
     if types is None:
         types = {'.docx', '.pptx', '.xslx'}
@@ -223,6 +240,9 @@ def listdir(
                             output=outpath,
                             convert=convert,
                             image_extensions=image_extensions,
+                            jpeg_quality=jpeg_quality,
+                            tiff_quality=tiff_quality,
+                            optimize=optimize,
                         )
                         if verbosity is not Verbosity.NONE:
                             future.add_done_callback(totaler_callback)
@@ -237,6 +257,9 @@ def process(
     output,
     convert=False,
     image_extensions=None,
+    jpeg_quality=75,
+    tiff_quality=75,
+    optimize=True,
 ):
     """
     Attempts to compress the images found in the Office File
@@ -250,6 +273,10 @@ def process(
         image_extensions: Supported image extensions. Deafult is None which
                           will use only the supported extensions that
                           can be OPENd and SAVEd by PIL on your machine.
+        jpeg_quality: Defaults to 75, which is PIL's default quality value
+                 Only applicable to JPEG and TIFFs
+        tiff_quality: Defaults to 75.
+        optimize: Default is True. Will be applied to JPEG and PNGs only
 
     Returns:
         CompressionRecord: namedtuple of the results
@@ -363,7 +390,12 @@ def process(
     )
 
 
-def compress_image(image_bytes, quality=75):
+def compress_image(
+    image_bytes,
+    jpeg_quality=75,
+    tiff_quality=75,
+    optimize=True,
+):
     """
     Compresses image if it is of a format of JPEG, PNG, or TIFF.
 
@@ -371,8 +403,10 @@ def compress_image(image_bytes, quality=75):
         image: image to compress as bytes. Image must support `.read()`
 
     Kwargs:
-        quality: Defaults to 75, which is PIL's default quality value
-                 Only applicable to JPEG and TIFFs
+        jpeg_quality: Defaults to 75, which is PIL's 
+                      default quality value for JPEGs
+        tiff_quality: Defaults to 75.
+        optimize: Default is True. Will be applied to JPEG and PNGs only
 
     Returns:
         io.BytesIO object positioned at laste write
@@ -381,16 +415,19 @@ def compress_image(image_bytes, quality=75):
     pil_image = Image.open(io.BytesIO(image_bytes))
     if pil_image.format == 'JPEG':
         pil_image.save(
-            bytes_io_image, format='JPEG', quality=quality, optimize=True
+            bytes_io_image,
+            format='JPEG',
+            quality=jpeg_quality,
+            optimize=optimize,
         )
     elif pil_image.format == 'PNG':
-        pil_image.save(bytes_io_image, format='PNG', optimize=True)
+        pil_image.save(bytes_io_image, format='PNG', optimize=optimize)
     elif pil_image.format == 'TIFF':
-        pil_image.save(bytes_io_image, format='TIFF', quality=quality)
+        pil_image.save(bytes_io_image, format='TIFF', quality=tiff_quality)
     return bytes_io_image
 
 
-def convert_image(image_bytes, quality=75):
+def convert_image(image_bytes, quality=75, optimize=True):
     """
     Converts image to JPG
 
@@ -399,6 +436,7 @@ def convert_image(image_bytes, quality=75):
 
     Kwargs:
         quality: Defaults to 75, which is PIL's default quality value
+        optimize: Defaults to True. Will attempt an optimization pass
 
     Returns:
         io.BytesIO object positioned at laste write
@@ -407,7 +445,7 @@ def convert_image(image_bytes, quality=75):
     pil_image = Image.open(io.BytesIO(image_bytes))
     pil_image = pil_image.convert('RGB')
     pil_image.save(
-        bytes_io_image, 'JPEG', quality=quality, optimize=True
+        bytes_io_image, 'JPEG', quality=quality, optimize=optimize
     )
     return bytes_io_image
 

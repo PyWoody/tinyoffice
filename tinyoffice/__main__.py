@@ -69,6 +69,24 @@ parser.add_argument(
     help='Image extensions to compress. Default will be only the extensions '
          'that are supported by Pillow on your system.\nShould be ignored.'
 )
+parser.add_argument(
+    '--jpeg-quality',
+    default=75,
+    type=int,
+    help='Default is 75',
+)
+parser.add_argument(
+    '--tiff-quality',
+    default=75,
+    type=int,
+    help='Default is 75',
+)
+parser.add_argument(
+    '--no-optimize',
+    default=False,
+    action='store_true',
+    help='Flag for disabling optimization passes on JPEGs and PNGS',
+)
 args = parser.parse_args()
 
 image_extensions = args.extensions if args.extensions else None
@@ -80,7 +98,7 @@ elif args.verbose == 1:
     verbosity = tinyoffice.Verbosity.LOW
 elif args.verbose == 2:
     verbosity = tinyoffice.Verbosity.NORMAL
-else args.verbose:
+else:
     verbosity = tinyoffice.Verbosity.HIGH
 
 path = os.path.realpath(args.path)
@@ -95,6 +113,9 @@ if args.recurse:
         convert=args.convert,
         verbosity=verbosity,
         image_extensions=image_extensions,
+        jpeg_quality=args.jpeg_quality,
+        tiff_quality=args.tiff_quality,
+        optimize=not args.no_optimize,
     )
 else:
     if os.path.isdir(path):
@@ -106,6 +127,9 @@ else:
             convert=args.convert,
             verbosity=verbosity,
             image_extensions=image_extensions,
+            jpeg_quality=args.jpeg_quality,
+            tiff_quality=args.tiff_quality,
+            optimize=not args.no_optimize,
         )
     else:
         if output is None or not os.path.splitext(output)[1]:
@@ -116,6 +140,9 @@ else:
                 output=output,
                 convert=args.convert,
                 image_extensions=image_extensions,
+                jpeg_quality=args.jpeg_quality,
+                tiff_quality=args.tiff_quality,
+                optimize=not args.no_optimize,
             )
             if verbosity is tinyoffice.Verbosity.LOW:
                 if result.num_images_compressed:
