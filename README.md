@@ -13,9 +13,7 @@ You can install `tinyoffice` from PyPi:
 % pip install tinyoffice
 ```
 
-NOTE: `tinyoffice` requires `Pillow` (`PIL` Fork) [Pillow](https://pillow.readthedocs.io/en/stable/), which can have installation conflicts. If you experience any issues while installing `tinyoffice`, please follow the `Pillow` installation steps found here: https://pillow.readthed
-## tinyoffice
-ocs.io/en/stable/installation.html.
+NOTE: `tinyoffice` requires `Pillow` (`PIL` Fork) [Pillow](https://pillow.readthedocs.io/en/stable/), which can have installation conflicts. If you experience any issues while installing `tinyoffice`, please follow the `Pillow` installation steps found here: https://pillow.readthedocs.io/en/stable/installation.html.
 
 
 ## Usage
