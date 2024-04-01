@@ -88,7 +88,7 @@ def walk(
             # A file but it may not exist so you can't .isfile it
             output = os.path.dirname(output)
         else:
-            output = output
+            output = os.path.realpath(output)
         os.makedirs(output, exist_ok=True)
 
     if verbosity is not Verbosity.NONE:
@@ -112,18 +112,9 @@ def walk(
             if func in Image.SAVE
             if func in Image.OPEN
         }
-    stopped = False
     with ProcessPoolExecutor() as executor:
-        if stopped:
-            print('Shutting down executor...')
-            executor.shutdown(cancel_futures=True)
-            return
         for root, dirs, files in os.walk(cwd):
             for f in files:
-                if stopped:
-                    print('Shutting down executor...')
-                    executor.shutdown(cancel_futures=True)
-                    return
                 if os.path.splitext(f)[1].lower() in types:
                     fpath = os.path.join(root, f)
                     outpath = os.path.join(output, f)
@@ -194,7 +185,7 @@ def listdir(
             # A file but it may not exist so you can't .isfile it
             output = os.path.dirname(output)
         else:
-            output = output
+            output = os.path.realpath(output)
         os.makedirs(output, exist_ok=True)
 
     if verbosity is not Verbosity.NONE:
@@ -218,35 +209,30 @@ def listdir(
             if func in Image.SAVE
             if func in Image.OPEN
         }
-    stopped = False
     with ProcessPoolExecutor() as executor:
-        if stopped:
-            print('Shutting down executor...')
+        try:
+            for item in os.listdir(cwd):
+                fpath = os.path.join(cwd, item)
+                if os.path.isfile(fpath):
+                    if os.path.splitext(fpath)[1].lower() in types:
+                        outpath = os.path.join(output, item)
+                        if overwrite or not os.path.isfile(outpath):
+                            future = executor.submit(
+                                process,
+                                fpath,
+                                output=outpath,
+                                convert=convert,
+                                image_extensions=image_extensions,
+                                jpeg_quality=jpeg_quality,
+                                tiff_quality=tiff_quality,
+                                optimize=optimize,
+                            )
+                            if verbosity is not Verbosity.NONE:
+                                future.add_done_callback(totaler_callback)
+                                future.add_done_callback(printer_callback)
+        except KeyboardInterrupt:
+            print('Shutting down exceutor pool...')
             executor.shutdown(cancel_futures=True)
-            return
-        for item in os.listdir(cwd):
-            if stopped:
-                print('Shutting down executor...')
-                executor.shutdown(cancel_futures=True)
-                return
-            fpath = os.path.join(cwd, item)
-            if os.path.isfile(fpath):
-                if os.path.splitext(fpath)[1].lower() in types:
-                    outpath = os.path.join(output, item)
-                    if overwrite or not os.path.isfile(outpath):
-                        future = executor.submit(
-                            process,
-                            fpath,
-                            output=outpath,
-                            convert=convert,
-                            image_extensions=image_extensions,
-                            jpeg_quality=jpeg_quality,
-                            tiff_quality=tiff_quality,
-                            optimize=optimize,
-                        )
-                        if verbosity is not Verbosity.NONE:
-                            future.add_done_callback(totaler_callback)
-                            future.add_done_callback(printer_callback)
     if verbosity is not Verbosity.NONE:
         print_total(output_record, verbosity)
 
@@ -403,7 +389,7 @@ def compress_image(
         image: image to compress as bytes. Image must support `.read()`
 
     Kwargs:
-        jpeg_quality: Defaults to 75, which is PIL's 
+        jpeg_quality: Defaults to 75, which is PIL's
                       default quality value for JPEGs
         tiff_quality: Defaults to 75.
         optimize: Default is True. Will be applied to JPEG and PNGs only
@@ -522,6 +508,8 @@ def totaler(output_record, future):
 
 
 def print_total(record, verbosity):
+    if verbosity is not Verbosity.NONE:
+        print('\n\n')
     if verbosity is Verbosity.LOW:
         print(
             f'Compressed {len(record["compressed_files"]):,} '
