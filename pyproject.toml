@@ -21,3 +21,6 @@ dependencies = ["Pillow"]
 
 [project.urls]
 Homepage = "https://github.com/PyWoody/tinyoffice"
+
+[tool.setuptools.packages.find]
+exclude = ["data"]
