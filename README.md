@@ -2,7 +2,7 @@
 
 Make your Office files tiny!
 
-`tinyoffice` attemps to compresses and optionally convert your embedded image files in your Office files.
+`tinyoffice` attemps to compresses and optionally convert the embedded image files in your Office files.
 
 
 ## Installation
