@@ -114,11 +114,21 @@ def walk(
         }
     with ProcessPoolExecutor() as executor:
         for root, dirs, files in os.walk(cwd):
+            if output in root:
+                continue
+            outpath_created = False
             for f in files:
                 if os.path.splitext(f)[1].lower() in types:
                     fpath = os.path.join(root, f)
-                    outpath = os.path.join(output, f)
+                    outpath = os.path.join(
+                        output, os.path.relpath(root, start=cwd), f
+                    )
                     if overwrite or not os.path.isfile(outpath):
+                        if not outpath_created:
+                            os.makedirs(
+                                os.path.dirname(outpath), exist_ok=True
+                            )
+                            outpath_created = True
                         future = executor.submit(
                             process,
                             fpath,
@@ -442,16 +452,17 @@ def printer(future, verbosity=Verbosity.NORMAL):
     except Exception as e:
         print(e)
     else:
+        plural_errors = '' if len(result.errors) == 1 else 's'
         if verbosity is Verbosity.LOW:
             if result.num_images_compressed:
                 print(
-                    f'Compressed {result.filename}. '
-                    f'{len(result.errors):,} Error(s) encountered.'
+                    f'Compressed {result.filename!r}. '
+                    f'{len(result.errors):,} Error{plural_errors} encountered.'
                 )
         elif verbosity is Verbosity.NORMAL:
             if result.num_images_compressed:
                 print(
-                    f'Filename: {result.filename}.'
+                    f'Filename: {result.filename!r}.'
                     '\n'
                     f'Results: '
                     f'{result.num_images_compressed:,} compressed, '
@@ -462,22 +473,22 @@ def printer(future, verbosity=Verbosity.NORMAL):
                 )
             else:
                 print(
-                    f'No compressed images for {result.filename}. '
-                    f'{len(result.errors):,} Error(s) encountered.'
+                    f'No images compressed for {result.filename!r}. '
+                    f'{len(result.errors):,} Error{plural_errors} encountered.'
                 )
         elif verbosity is Verbosity.HIGH:
-            errors = "\n\t".join(result.errors) if result.errors else 'None!'
+            errors = ", ".join(result.errors) if result.errors else 'None!'
             print(
                 ''.join(
                     [
-                        f'Filename: {result.filename}.',
+                        f'Filename: {result.filename!r}.',
                         '\n',
                         'Results: ',
                         f'\n\t{result.num_images_compressed:,} compressed',
                         f'\n\t{result.num_images_converted:,} converted',
                         f'\n\t{result.num_images_skipped:,} skipped',
                         '\n',
-                        f'Errors: {errors}'
+                        f'Errors:\n\t{errors}'
                     ]
                 )
             )
@@ -508,14 +519,19 @@ def totaler(output_record, future):
 
 
 def print_total(record, verbosity):
-    if verbosity is not Verbosity.NONE:
-        print('\n\n')
+    print('\n\n')
+    plural_files = '' if len(record['compressed_files']) == 1 else 's'
+    plural_imgs = '' if record['images_compressed'] == 1 else 's'
+    plural_converted = '' if record['images_converted'] == 1 else 's'
+    plural_img_errs = '' if record['image_errors'] == 1 else 's'
+    plural_errs = '' if len(record['errors']) == 1 else 's'
     if verbosity is Verbosity.LOW:
         print(
             f'Compressed {len(record["compressed_files"]):,} '
-            f'document(s) with {len(record["image_errors"]):,} '
-            'image(s) that could not be converted and '
-            f'{len(record["errors"]):,} document(s) '
+            f'document{plural_files} with '
+            f'{len(record["image_errors"]):,} '
+            f'image{plural_img_errs} that could not be converted and '
+            f'{len(record["errors"]):,} document{plural_errs} '
             'that failed.'
         )
     elif verbosity is Verbosity.NORMAL:
@@ -535,19 +551,22 @@ def print_total(record, verbosity):
                     total_cmp = '<1'
                 savings = f'{total_cmp} bytes'
             output = f'Compressed {len(record["compressed_files"]):,} '
-            output += 'document(s)\n'
-            output += f'\n{record["images_compressed"]:,} '
-            output += 'image(s) were '
+            output += f'document{plural_files}\n'
+            output += f'{record["images_compressed"]:,} '
+            output += f'image{plural_imgs} were '
             output += f'compressed for a savings of {savings}'
             output += '\n'
             if record['images_converted'] > 0:
                 output += f'{record["images_converted"]:,} '
-                output += 'image(s) were converted from TIFF to JPG\n'
+                output += f'image{plural_converted} were '
+                output += 'converted from TIFF to JPG\n'
             if record['image_errors']:
                 output += f'{len(record["image_errors"]):,} '
-                output += 'image(s) could not be converted or compressed\n'
+                output += f'image{plural_img_errs} could not be '
+                output += 'converted or compressed\n'
             if record['errors']:
-                output += f'{len(record["errors"]):,} document(s) '
+                output += f'{len(record["errors"]):,} '
+                output += f'document{plural_errs} '
                 output += 'could not be compressed due to error'
         else:
             output = 'No images were compressed'
@@ -569,18 +588,20 @@ def print_total(record, verbosity):
                     total_cmp = '<1'
                 savings = f'{total_cmp} bytes'
             output = f'Compressed {len(record["compressed_files"]):,} '
-            output += 'document(s):\n\t'
+            output += f'document{plural_files}:\n\t'
             output += '\n\t'.join(record['compressed_files'])
             output += f'\n{record["images_compressed"]:,} '
-            output += 'image(s) were '
+            output += f'image{plural_imgs} were '
             output += f'compressed for a savings of {savings}'
             output += '\n'
             if record['images_converted'] > 0:
                 output += f'{record["images_converted"]:,} '
-                output += 'image(s) were converted from TIFF to JPG\n'
+                output += f'image{plural_converted} were converted '
+                output += 'from TIFF to JPG\n'
             if record['image_errors']:
                 output += f'{len(record["image_errors"]):,} '
-                output += 'image(s) could not be converted or compressed\n'
+                output += f'image{plural_img_errs} could not be '
+                output += 'converted or compressed\n'
             if record['errors']:
                 output += 'ERRORS:\n\t'
                 output += '\n\t'.join(record["errors"])
