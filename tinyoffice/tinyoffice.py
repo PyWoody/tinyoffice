@@ -507,15 +507,14 @@ def totaler(output_record, future):
                 result.num_images_skipped,
             ]
         )
-        if total_images:
-            output_record['compressed_files'].append(result.filename)
-            output_record['images_total'] += total_images
-            output_record['images_compressed'] += result.num_images_compressed
-            output_record['images_skipped'] += result.num_images_skipped
-            output_record['images_converted'] += result.num_images_converted
-            output_record['total_bytes'] += result.start_size
-            output_record['total_bytes_compressed'] += result.compressed_size
-            output_record['image_errors'].extend(result.errors)
+        output_record['compressed_files'].append(result.filename)
+        output_record['images_total'] += total_images
+        output_record['images_compressed'] += result.num_images_compressed
+        output_record['images_skipped'] += result.num_images_skipped
+        output_record['images_converted'] += result.num_images_converted
+        output_record['total_bytes'] += result.start_size
+        output_record['total_bytes_compressed'] += result.compressed_size
+        output_record['image_errors'].extend(result.errors)
 
 
 def print_total(record, verbosity):
