@@ -77,7 +77,7 @@ def walk(
                   Will be applied to JPEG and PNGs only
     """
     if types is None:
-        types = {'.docx', '.pptx', '.xslx'}
+        types = {'.docx', '.pptx', '.xlsx'}
     else:
         if isinstance(types, str):
             types = {types}
@@ -185,7 +185,7 @@ def listdir(
                   Will be applied to JPEG and PNGs only
     """
     if types is None:
-        types = {'.docx', '.pptx', '.xslx'}
+        types = {'.docx', '.pptx', '.xlsx'}
     else:
         if isinstance(types, str):
             types = {types}
