@@ -115,35 +115,39 @@ def walk(
             if func in Image.OPEN
         }
     with ProcessPoolExecutor() as executor:
-        for root, dirs, files in os.walk(cwd):
-            if output in root:
-                continue
-            outpath_created = False
-            for f in files:
-                if os.path.splitext(f)[1].lower() in types:
-                    fpath = os.path.join(root, f)
-                    outpath = os.path.join(
-                        output, os.path.relpath(root, start=cwd), f
-                    )
-                    if overwrite or not os.path.isfile(outpath):
-                        if not outpath_created:
-                            os.makedirs(
-                                os.path.dirname(outpath), exist_ok=True
-                            )
-                            outpath_created = True
-                        future = executor.submit(
-                            process,
-                            fpath,
-                            output=outpath,
-                            convert=convert,
-                            image_extensions=image_extensions,
-                            jpeg_quality=jpeg_quality,
-                            tiff_quality=tiff_quality,
-                            optimize=optimize,
+        try:
+            for root, dirs, files in os.walk(cwd):
+                if output in root:
+                    continue
+                outpath_created = False
+                for f in files:
+                    if os.path.splitext(f)[1].lower() in types:
+                        fpath = os.path.join(root, f)
+                        outpath = os.path.join(
+                            output, os.path.relpath(root, start=cwd), f
                         )
-                        if verbosity is not Verbosity.NONE:
-                            future.add_done_callback(totaler_callback)
-                            future.add_done_callback(printer_callback)
+                        if overwrite or not os.path.isfile(outpath):
+                            if not outpath_created:
+                                os.makedirs(
+                                    os.path.dirname(outpath), exist_ok=True
+                                )
+                                outpath_created = True
+                            future = executor.submit(
+                                process,
+                                fpath,
+                                output=outpath,
+                                convert=convert,
+                                image_extensions=image_extensions,
+                                jpeg_quality=jpeg_quality,
+                                tiff_quality=tiff_quality,
+                                optimize=optimize,
+                            )
+                            if verbosity is not Verbosity.NONE:
+                                future.add_done_callback(totaler_callback)
+                                future.add_done_callback(printer_callback)
+        except KeyboardInterrupt:
+            print('Shutting down executor pool...')
+            executor.shutdown(cancel_futures=True)
     if verbosity is not Verbosity.NONE:
         print_total(output_record, verbosity)
 
@@ -244,7 +248,7 @@ def listdir(
                                 future.add_done_callback(totaler_callback)
                                 future.add_done_callback(printer_callback)
         except KeyboardInterrupt:
-            print('Shutting down exceutor pool...')
+            print('Shutting down executor pool...')
             executor.shutdown(cancel_futures=True)
     if verbosity is not Verbosity.NONE:
         print_total(output_record, verbosity)
