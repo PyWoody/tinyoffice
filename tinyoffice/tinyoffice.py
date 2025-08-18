@@ -306,7 +306,8 @@ def process(
     conversions = []
 
     try:
-        _ = zipfile.ZipFile(fpath, 'r')
+        with zipfile.ZipFile(fpath, 'r') as _:
+            pass
     except Exception as e:
         raise Exception(f'{str(e)}: {repr(fpath)}')
     with zipfile.ZipFile(fpath, 'r') as in_zip:
