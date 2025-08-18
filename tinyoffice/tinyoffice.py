@@ -98,8 +98,8 @@ def walk(
             output = os.path.realpath(output)
         os.makedirs(output, exist_ok=True)
 
+    printer_callback = partial(printer, verbosity=verbosity)
     if verbosity is not Verbosity.NONE:
-        printer_callback = partial(printer, verbosity=verbosity)
         output_record = {
             'compressed_files': [],
             'errors': [],
@@ -147,9 +147,9 @@ def walk(
                                 tiff_quality=tiff_quality,
                                 optimize=optimize,
                             )
+                            future.add_done_callback(printer_callback)
                             if verbosity is not Verbosity.NONE:
                                 future.add_done_callback(totaler_callback)
-                                future.add_done_callback(printer_callback)
         except KeyboardInterrupt:
             print('Shutting down executor pool...')
             executor.shutdown(cancel_futures=True)
@@ -305,6 +305,10 @@ def process(
     errors = []
     conversions = []
 
+    try:
+        _ = zipfile.ZipFile(fpath, 'r')
+    except Exception as e:
+        raise Exception(f'{str(e)}: {repr(fpath)}')
     with zipfile.ZipFile(fpath, 'r') as in_zip:
         with tempfile.NamedTemporaryFile(mode='rb+') as tmp_file:
             with zipfile.ZipFile(tmp_file, 'w') as out_zip:
@@ -521,12 +525,20 @@ def print_total(record, verbosity):
     plural_img_errs = '' if record['image_errors'] == 1 else 's'
     plural_errs = '' if len(record['errors']) == 1 else 's'
     output = ['\n']
+    default = (
+        'Compressed {0:,} document{1} with {2:,} image{3} that could not be '
+        'converted and {4:,} document{5} that failed.'
+    )
     if verbosity is Verbosity.LOW:
         output.append(
-            f'Compressed {len(record["compressed_files"]):,} '
-            f'document{plural_files} with {len(record["image_errors"]):,} '
-            f'image{plural_img_errs} that could not be converted and '
-            f'{len(record["errors"]):,} document{plural_errs} that failed.'
+            default.format(
+                len(record["compressed_files"]),
+                plural_files,
+                len(record["image_errors"]),
+                plural_img_errs,
+                len(record["errors"]),
+                plural_errs,
+            )
         )
     elif verbosity is Verbosity.NORMAL:
         if record['total_bytes_compressed'] > 0:
@@ -567,7 +579,16 @@ def print_total(record, verbosity):
                     'could not be compressed due to error'
                 )
         else:
-            output.append('No images were compressed')
+            output.append(
+                default.format(
+                    len(record["compressed_files"]),
+                    plural_files,
+                    len(record["image_errors"]),
+                    plural_img_errs,
+                    len(record["errors"]),
+                    plural_errs,
+                )
+            )
     elif verbosity is Verbosity.HIGH:
         if record['total_bytes_compressed'] > 0:
             total_cmp = record['total_bytes_compressed']
@@ -609,5 +630,14 @@ def print_total(record, verbosity):
             else:
                 output.append('No errors received!')
         else:
-            output.append('No images were compressed')
+            output.append(
+                default.format(
+                    len(record["compressed_files"]),
+                    plural_files,
+                    len(record["image_errors"]),
+                    plural_img_errs,
+                    len(record["errors"]),
+                    plural_errs,
+                )
+            )
     print('\n'.join(output))
