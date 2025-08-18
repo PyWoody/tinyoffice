@@ -291,6 +291,12 @@ def process(
     Returns:
         CompressionRecord: namedtuple of the results
     """
+    try:
+        with zipfile.ZipFile(fpath, 'r') as _:
+            pass
+    except Exception as e:
+        raise Exception(f'{str(e)}: {repr(fpath)}')
+
     if image_extensions is None:
         registered_extensions = Image.registered_extensions()
         image_extensions = {
@@ -305,11 +311,6 @@ def process(
     errors = []
     conversions = []
 
-    try:
-        with zipfile.ZipFile(fpath, 'r') as _:
-            pass
-    except Exception as e:
-        raise Exception(f'{str(e)}: {repr(fpath)}')
     with zipfile.ZipFile(fpath, 'r') as in_zip:
         with tempfile.NamedTemporaryFile(mode='rb+') as tmp_file:
             with zipfile.ZipFile(tmp_file, 'w') as out_zip:
@@ -339,7 +340,9 @@ def process(
                         else:
                             try:
                                 converted_image = convert_image(
-                                    in_zip.read(item.filename)
+                                    in_zip.read(item.filename),
+                                    quality=jpeg_quality,
+                                    optimize=optimize,
                                 )
                             except Exception as e:
                                 errors.append(
@@ -360,7 +363,10 @@ def process(
                     elif ext in image_extensions:
                         try:
                             compressed_image = compress_image(
-                                in_zip.read(item.filename)
+                                in_zip.read(item.filename),
+                                jpeg_quality=jpeg_quality,
+                                tiff_quality=tiff_quality,
+                                optimize=optimize,
                             )
                         except Exception as e:
                             errors.append(
@@ -396,7 +402,7 @@ def process(
                 while chunk := tmp_file.read(io.DEFAULT_BUFFER_SIZE):
                     _ = f.write(chunk)
     return CompressionRecord(
-        filename=fpath,
+        filename=output,
         errors=errors,
         num_images_compressed=num_images_compressed,
         num_images_converted=num_images_converted,
@@ -480,7 +486,7 @@ def printer(future, verbosity=Verbosity.NORMAL):
                 print(f'Compressed {result.filename!r}')
         elif verbosity is Verbosity.NORMAL:
             print(
-                f'Filename: {result.filename!r}.\n\tResults: '
+                f'Filename: {result.filename!r}\n\tResults: '
                 f'{result.num_images_compressed:,} compressed, '
                 f'{result.num_images_converted:,} converted, '
                 f'{result.num_images_skipped:,} skipped, '
@@ -489,7 +495,7 @@ def printer(future, verbosity=Verbosity.NORMAL):
         elif verbosity is Verbosity.HIGH:
             errors = ", ".join(result.errors) if result.errors else 'None!'
             print(
-                f'Filename: {result.filename!r}.\n\tResults: '
+                f'Filename: {result.filename!r}\n\tResults: '
                 f'\n\t\t{result.num_images_compressed:,} compressed'
                 f'\n\t\t{result.num_images_converted:,} converted'
                 f'\n\t\t{result.num_images_skipped:,} skipped'
@@ -516,7 +522,9 @@ def totaler(output_record, future):
         output_record['images_skipped'] += result.num_images_skipped
         output_record['images_converted'] += result.num_images_converted
         output_record['total_bytes'] += result.start_size
-        output_record['total_bytes_compressed'] += result.compressed_size
+        output_record['total_bytes_compressed'] += (
+            result.start_size - result.compressed_size
+        )
         output_record['image_errors'].extend(result.errors)
 
 
@@ -527,119 +535,85 @@ def print_total(record, verbosity):
     plural_img_errs = '' if record['image_errors'] == 1 else 's'
     plural_errs = '' if len(record['errors']) == 1 else 's'
     output = ['\n']
-    default = (
-        'Compressed {0:,} document{1} with {2:,} image{3} that could not be '
-        'converted and {4:,} document{5} that failed.'
-    )
     if verbosity is Verbosity.LOW:
         output.append(
-            default.format(
-                len(record["compressed_files"]),
-                plural_files,
-                len(record["image_errors"]),
-                plural_img_errs,
-                len(record["errors"]),
-                plural_errs,
-            )
+            f'Compressed {len(record["compressed_files"]):,} '
+            f'document{plural_files} with {len(record["image_errors"]):,} '
+            f'image{plural_img_errs} that could not be '
+            f'converted and {len(record["errors"]):,} document{plural_errs} '
+            'that failed.'
         )
     elif verbosity is Verbosity.NORMAL:
-        if record['total_bytes_compressed'] > 0:
-            total_cmp = record['total_bytes_compressed']
-            if total_cmp > GB:
-                savings = f'{total_cmp / GB:.2f} GB'
-            elif total_cmp > MB:
-                savings = f'{total_cmp / MB:.2f} MB'
-            elif total_cmp > KB:
-                savings = f'{total_cmp / KB:.2f} KB'
-            else:
-                if total_cmp < 1:
-                    total_cmp = '<1'
-                savings = f'{total_cmp} bytes'
-            output.append(
-                f'Compressed {len(record["compressed_files"]):,} '
-                f'document{plural_files} with {record["images_compressed"]:,} '
-                f'image{plural_imgs} being '
-                f'compressed for a savings of {savings}'
-            )
-            # Maybe add these regardless
-            if record['images_converted'] > 0:
-                output.append(
-                    f'{record["images_converted"]:,} '
-                    f'image{plural_converted} were '
-                    'converted from TIFF to JPG'
-                )
-            if record['image_errors']:
-                output.append(
-                    f'{len(record["image_errors"]):,} '
-                    f'image{plural_img_errs} could not be '
-                    'converted or compressed'
-                )
-            if record['errors']:
-                output.append(
-                    f'{len(record["errors"]):,} '
-                    f'document{plural_errs} '
-                    'could not be compressed due to error'
-                )
+        total_cmp = record['total_bytes_compressed']
+        if total_cmp > GB:
+            savings = f'{total_cmp / GB:.2f} GB'
+        elif total_cmp > MB:
+            savings = f'{total_cmp / MB:.2f} MB'
+        elif total_cmp > KB:
+            savings = f'{total_cmp / KB:.2f} KB'
         else:
+            if total_cmp < 1:
+                total_cmp = '<1'
+            savings = f'{total_cmp} bytes'
+        output.append(
+            f'Compressed {len(record["compressed_files"]):,} '
+            f'document{plural_files} with {record["images_compressed"]:,} '
+            f'image{plural_imgs} being '
+            f'compressed for a savings of {savings}'
+        )
+        if record['images_converted'] > 0:
             output.append(
-                default.format(
-                    len(record["compressed_files"]),
-                    plural_files,
-                    len(record["image_errors"]),
-                    plural_img_errs,
-                    len(record["errors"]),
-                    plural_errs,
-                )
+                f'\t{record["images_converted"]:,} '
+                f'image{plural_converted} were '
+                'converted from TIFF to JPG'
+            )
+        if record['image_errors']:
+            output.append(
+                f'\t{len(record["image_errors"]):,} '
+                f'image{plural_img_errs} could not be '
+                'converted or compressed'
+            )
+        if record['errors']:
+            output.append(
+                f'\t{len(record["errors"]):,} '
+                f'document{plural_errs} '
+                'could not be compressed due to error'
             )
     elif verbosity is Verbosity.HIGH:
-        if record['total_bytes_compressed'] > 0:
-            total_cmp = record['total_bytes_compressed']
-            if total_cmp > GB:
-                savings = f'{total_cmp / GB:.2f} GB'
-            elif total_cmp > MB:
-                savings = f'{total_cmp / MB:.2f} MB'
-            elif total_cmp > KB:
-                savings = f'{total_cmp / KB:.2f} KB'
-            else:
-                if total_cmp < 1:
-                    total_cmp = '<1'
-                savings = f'{total_cmp} bytes'
-            nl_t = '\n\t'
-            output.append(
-                f'Compressed {len(record["compressed_files"]):,} '
-                f'document{plural_files}:\n\t'
-                f'{nl_t.join(repr(i) for i in record["compressed_files"])}'
-                f'\n{record["images_compressed"]:,} '
-                f'image{plural_imgs} were '
-                f'compressed for a savings of {savings}'
-            )
-            if record['images_converted'] > 0:
-                output.append(
-                    f'{record["images_converted"]:,} '
-                    f'image{plural_converted} were converted '
-                    'from TIFF to JPG'
-                )
-            if record['image_errors']:
-                output.append(
-                    f'{len(record["image_errors"]):,} '
-                    f'image{plural_img_errs} could not be '
-                    'converted or compressed'
-                )
-            if record['errors']:
-                output.append(
-                    f'ERRORS:\n\t{nl_t.join(record["errors"])}'
-                )
-            else:
-                output.append('No errors received!')
+        total_cmp = record['total_bytes_compressed']
+        if total_cmp > GB:
+            savings = f'{total_cmp / GB:.2f} GB'
+        elif total_cmp > MB:
+            savings = f'{total_cmp / MB:.2f} MB'
+        elif total_cmp > KB:
+            savings = f'{total_cmp / KB:.2f} KB'
         else:
+            if total_cmp < 1:
+                total_cmp = '<1'
+            savings = f'{total_cmp} bytes'
+        nl_t = '\n\t'
+        output.append(
+            f'Compressed {len(record["compressed_files"]):,} '
+            f'document{plural_files}:\n\t'
+            f'{nl_t.join(repr(i) for i in record["compressed_files"])}'
+            f'\n{record["images_compressed"]:,} '
+            f'image{plural_imgs} were '
+            f'compressed for a savings of {savings}'
+        )
+        output.append(
+            f'\t{record["images_converted"]:,} '
+            f'image{plural_converted} were converted '
+            'from TIFF to JPG'
+        )
+        output.append(
+            f'\t{len(record["image_errors"]):,} '
+            f'image{plural_img_errs} could not be '
+            'converted or compressed'
+        )
+        if record['errors']:
             output.append(
-                default.format(
-                    len(record["compressed_files"]),
-                    plural_files,
-                    len(record["image_errors"]),
-                    plural_img_errs,
-                    len(record["errors"]),
-                    plural_errs,
-                )
+                f'ERRORS:\n\t{nl_t.join(record["errors"])}'
             )
+        else:
+            output.append('No errors received!')
     print('\n'.join(output))
