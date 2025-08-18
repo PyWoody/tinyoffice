@@ -392,8 +392,9 @@ def process(
                                 )
                             out_zip.writestr(item, out_xml)
             with open(output, 'wb') as f:
-                tmp_file.seek(0)
-                f.write(tmp_file.read())
+                _ = tmp_file.seek(0)
+                while chunk := tmp_file.read(io.DEFAULT_BUFFER_SIZE):
+                    _ = f.write(chunk)
     return CompressionRecord(
         filename=fpath,
         errors=errors,
