@@ -449,7 +449,7 @@ def compress_image(
 
 def convert_image(image_bytes, quality=75, optimize=True):
     """
-    Converts image to JPG
+    Converts image to JPEG
 
     Args:
         image: image to be converted as bytes
@@ -562,7 +562,7 @@ def print_total(record, verbosity):
             output.append(
                 f'\t{record["images_converted"]:,} '
                 f'image{plural_converted} were '
-                'converted from TIFF to JPG'
+                'converted from TIFF to JPEG'
             )
         if record['image_errors']:
             output.append(
@@ -600,7 +600,7 @@ def print_total(record, verbosity):
         output.append(
             f'\t{record["images_converted"]:,} '
             f'image{plural_converted} were converted '
-            'from TIFF to JPG'
+            'from TIFF to JPEG'
         )
         output.append(
             f'\t{len(record["image_errors"]):,} '
