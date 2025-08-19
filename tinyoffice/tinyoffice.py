@@ -291,11 +291,8 @@ def process(
     Returns:
         CompressionRecord: namedtuple of the results
     """
-    try:
-        with zipfile.ZipFile(fpath, 'r') as _:
-            pass
-    except Exception as e:
-        raise Exception(f'{str(e)}: {repr(fpath)}')
+    if not zipfile.is_zipfile(fpath):
+        raise zipfile.BadZipFile(f'ERROR: {fpath!r}')
 
     if image_extensions is None:
         registered_extensions = Image.registered_extensions()
