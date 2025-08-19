@@ -122,8 +122,6 @@ def walk(
     with ProcessPoolExecutor() as executor:
         try:
             for root, dirs, files in os.walk(cwd):
-                if output in root:
-                    continue
                 outpath_created = False
                 for f in files:
                     if os.path.splitext(f)[1].lower() in types:
