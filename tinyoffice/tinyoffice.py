@@ -85,9 +85,9 @@ def walk(
         types = {'.docx', '.pptx', '.xlsx'}
     else:
         if isinstance(types, str):
-            types = {types}
+            types = {types.lower().strip()}
         else:
-            types = {i for i in types}
+            types = {i.lower().strip() for i in types}
     if output is None:
         output = os.getcwd()
     else:
@@ -197,9 +197,9 @@ def listdir(
         types = {'.docx', '.pptx', '.xlsx'}
     else:
         if isinstance(types, str):
-            types = {types}
+            types = {types.lower().strip()}
         else:
-            types = {i for i in types}
+            types = {i.lower().strip() for i in types}
     if output is None:
         output = os.getcwd()
     else:
