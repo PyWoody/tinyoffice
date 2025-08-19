@@ -16,7 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-version = "0.0.5"
+version = "0.0.6"
 dependencies = ["Pillow"]
 
 [project.urls]
