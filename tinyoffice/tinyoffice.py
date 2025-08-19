@@ -210,8 +210,8 @@ def listdir(
             output = os.path.realpath(output)
         os.makedirs(output, exist_ok=True)
 
+    printer_callback = partial(printer, verbosity=verbosity)
     if verbosity is not Verbosity.NONE:
-        printer_callback = partial(printer, verbosity=verbosity)
         output_record = {
             'compressed_files': [],
             'errors': [],
@@ -249,9 +249,9 @@ def listdir(
                                 tiff_quality=tiff_quality,
                                 optimize=optimize,
                             )
+                            future.add_done_callback(printer_callback)
                             if verbosity is not Verbosity.NONE:
                                 future.add_done_callback(totaler_callback)
-                                future.add_done_callback(printer_callback)
         except KeyboardInterrupt:
             print('Shutting down executor pool...')
             executor.shutdown(cancel_futures=True)
