@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument(
     'path',
+    type=os.path.realpath,
     help='File or directory path.\nIf a file and recurse (-r/--recurse) '
          'is not set, only that file will be compressed.\nIf a directory, '
          'and recurse is not set, only the top-level files in the '
@@ -46,7 +47,7 @@ parser.add_argument(
     '--types',
     nargs='+',
     choices=['.docx', '.pptx', '.xlsx'],
-    default=['.docx', '.pptx', '.xlsx'],
+    default={'.docx', '.pptx', '.xlsx'},
     metavar='.docx .pptx .xlsx',
     help='Filetype extensions to compress.\nDefault is .docx, .pptx, .xlsx',
 )
@@ -60,6 +61,7 @@ parser.add_argument(
 parser.add_argument(
     '-o',
     '--output',
+    type=os.path.realpath,
     help='Path for the output location.',
 )
 parser.add_argument(
@@ -90,68 +92,61 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-image_extensions = args.extensions if args.extensions else None
-types = args.types if args.types else None
-
 if args.verbose <= 0:
-    verbosity = tinyoffice.Verbosity.NONE
+    args.verbose = tinyoffice.Verbosity.NONE
 elif args.verbose == 1:
-    verbosity = tinyoffice.Verbosity.LOW
+    args.verbose = tinyoffice.Verbosity.LOW
 elif args.verbose == 2:
-    verbosity = tinyoffice.Verbosity.NORMAL
+    args.verbose = tinyoffice.Verbosity.NORMAL
 else:
-    verbosity = tinyoffice.Verbosity.HIGH
-
-path = os.path.realpath(args.path)
-output = os.path.realpath(args.output) if args.output else args.output
+    args.verbose = tinyoffice.Verbosity.HIGH
 
 if args.recurse:
     tinyoffice.walk(
-        path,
-        types=types,
+        args.path,
+        types=args.types,
         overwrite=args.overwrite,
-        output=output,
+        output=args.output,
         convert=args.convert,
-        verbosity=verbosity,
-        image_extensions=image_extensions,
+        verbosity=args.verbose,
+        image_extensions=args.extensions,
         jpeg_quality=args.jpeg_quality,
         tiff_quality=args.tiff_quality,
         optimize=not args.no_optimize,
     )
 else:
-    if os.path.isdir(path):
+    if os.path.isdir(args.path):
         tinyoffice.listdir(
-            path,
-            types=types,
+            args.path,
+            types=args.types,
             overwrite=args.overwrite,
-            output=output,
+            output=args.output,
             convert=args.convert,
-            verbosity=verbosity,
-            image_extensions=image_extensions,
+            verbosity=args.verbose,
+            image_extensions=args.extensions,
             jpeg_quality=args.jpeg_quality,
             tiff_quality=args.tiff_quality,
             optimize=not args.no_optimize,
         )
     else:
-        if output is None or not os.path.splitext(output)[1]:
-            output = os.path.join(output, os.path.split(path)[1])
-        if args.overwrite or not os.path.isfile(path):
+        args.output = args.output if args.output else args.path
+        if args.overwrite or not os.path.isfile(args.output):
             result = tinyoffice.process(
-                path,
-                output=output,
+                args.path,
+                output=args.output,
                 convert=args.convert,
-                image_extensions=image_extensions,
+                image_extensions=args.extensions,
                 jpeg_quality=args.jpeg_quality,
                 tiff_quality=args.tiff_quality,
                 optimize=not args.no_optimize,
             )
-            if verbosity is tinyoffice.Verbosity.LOW:
+            if args.verbose is tinyoffice.Verbosity.LOW:
                 if result.num_images_compressed:
                     print(
                         f'Compressed {result.filename}. '
                         f'{len(result.errors):,} Error(s) encountered.'
                     )
-            elif verbosity is tinyoffice.Verbosity.NORMAL:
+            elif args.verbose is tinyoffice.Verbosity.NORMAL:
                 if result.num_images_compressed:
                     print(
                         f'Filename: {result.filename}.'
@@ -168,7 +163,7 @@ else:
                         f'No compressed images for {result.filename}. '
                         f'{len(result.errors):,} Error(s) encountered.'
                     )
-            elif verbosity is tinyoffice.Verbosity.HIGH:
+            elif args.verbose is tinyoffice.Verbosity.HIGH:
                 print(
                     f'Filename: {result.filename}.'
                     '\n'
