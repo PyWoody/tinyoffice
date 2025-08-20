@@ -85,7 +85,8 @@ parser.add_argument(
     '--no-optimize',
     default=False,
     action='store_true',
-    help='Flag for disabling optimization passes on JPEGs and PNGS',
+    help='Flag for disabling optimization passes on JPEGs and PNGS. '
+         'Images are optimized by Default.',
 )
 args = parser.parse_args()
 
