@@ -279,7 +279,7 @@ def process(
         CompressionRecord: dataclass object of the results
     """
     if not zipfile.is_zipfile(fpath):
-        raise zipfile.BadZipFile(f'ERROR: {fpath!r}')
+        raise zipfile.BadZipFile(f'{fpath!r}')
 
     if image_extensions is None:
         registered_extensions = Image.registered_extensions()
@@ -463,7 +463,7 @@ def printer(future, verbosity=Verbosity.NORMAL):
     try:
         result = future.result()
     except Exception as e:
-        print(e)
+        print(f'ERROR: {e}')
     else:
         if verbosity is Verbosity.LOW:
             if result.num_images_compressed:
