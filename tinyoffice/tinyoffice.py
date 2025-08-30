@@ -371,7 +371,7 @@ def process(
                                 )
                     else:
                         out_zip.writestr(item, in_zip.read(item.filename))
-                if convert and conversions:
+                if convert:
                     for item in in_zip.infolist():
                         ext = os.path.splitext(item.filename)[1].lower()
                         if ext == '.xml' or ext == '.rels':
